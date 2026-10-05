@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Spend a fictional fortune on cars, jets, islands, businesses, luxury and ridiculous things.">
+  <title>Spend the Fortune</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <section id="landing" class="landing screen active">
+      <div class="brand-lockup">
+        <span class="brand-kicker">A completely unnecessary wealth simulator</span>
+        <h1>SPEND THE<br><span>FORTUNE.</span></h1>
+        <p class="hero-copy">Pick a ridiculous fortune. Buy ridiculous things. Try not to go broke.</p>
+      </div>
+
+      <div class="fortune-picker">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Choose your starting fortune</span>
+            <h2>How rich are we getting?</h2>
+          </div>
+          <button class="text-button" id="aboutBtn">How it works</button>
+        </div>
+        <div id="fortuneGrid" class="fortune-grid"></div>
+      </div>
+
+      <div class="landing-note">
+        <span>All fortunes and prices are simplified, illustrative values for entertainment.</span>
+      </div>
+    </section>
+
+    <section id="store" class="store screen">
+      <header class="topbar">
+        <button class="brand-button" id="homeBtn" aria-label="Back to fortune selection">
+          <span class="brand-dot"></span>
+          <span>SPEND THE FORTUNE</span>
+        </button>
+        <div class="topbar-actions">
+          <button class="icon-button" id="soundBtn" title="Toggle sound">Sound</button>
+          <button class="icon-button" id="historyBtn" title="View purchase history">History</button>
+          <button class="outline-button" id="resetBtn">Reset</button>
+        </div>
+      </header>
+
+      <section class="wealth-panel">
+        <div class="wealth-main">
+          <div>
+            <span class="eyebrow">FORTUNE REMAINING</span>
+            <div class="balance" id="balance">$0</div>
+            <div class="wealth-sub"><span id="spent">$0 spent</span><span class="dot-separator">•</span><span id="itemsOwned">0 items</span></div>
+          </div>
+          <div class="wealth-actions">
+            <button class="primary-button" id="reportBtn">View report</button>
+            <button class="ghost-button" id="buyEverythingBtn">Buy everything</button>
+          </div>
+        </div>
+        <div class="progress-track" aria-label="Fortune spent">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-meta"><span id="progressLeft">100% left</span><span id="progressRight">0% spent</span></div>
+      </section>
+
+      <section class="stats-strip">
+        <div class="stat"><span>Largest purchase</span><strong id="largestPurchase">—</strong></div>
+        <div class="stat"><span>Average item</span><strong id="averagePurchase">$0</strong></div>
+        <div class="stat"><span>Categories owned</span><strong id="categoriesOwned">0 / 0</strong></div>
+        <div class="stat"><span>Achievements</span><strong id="achievementCount">0 / 16</strong></div>
+      </section>
+
+      <section class="store-content">
+        <aside class="sidebar">
+          <div class="sidebar-title">SHOP</div>
+          <div id="categoryList" class="category-list"></div>
+          <div class="sidebar-card">
+            <div class="sidebar-card-title">Challenge</div>
+            <p id="challengeText">Spend $1,000,000 without buying a car.</p>
+            <button class="small-button" id="challengeBtn">Try challenge</button>
+          </div>
+        </aside>
+
+        <div class="catalog-area">
+          <div class="catalog-toolbar">
+            <div class="search-wrap">
+              <span class="search-symbol">/</span>
+              <input id="searchInput" type="search" placeholder="Search the fortune..." autocomplete="off">
+              <kbd>Ctrl K</kbd>
+            </div>
+            <div class="toolbar-right">
+              <select id="sortSelect" class="select-control" aria-label="Sort products">
+                <option value="featured">Featured</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="name">Name</option>
+                <option value="owned">Most owned</option>
+              </select>
+            </div>
+          </div>
+          <div class="catalog-heading">
+            <div>
+              <span class="eyebrow" id="catalogEyebrow">ALL ITEMS</span>
+              <h2 id="catalogTitle">The shop</h2>
+            </div>
+            <span class="result-count" id="resultCount">0 items</span>
+          </div>
+          <div id="productGrid" class="product-grid"></div>
+          <div id="emptyState" class="empty-state hidden">
+            <div class="empty-mark">0</div>
+            <h3>No matches.</h3>
+            <p>Try a different search or category.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="modal" class="modal">
+    <div class="modal-card">
+      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+      <div id="modalContent"></div>
+    </div>
+  </dialog>
+
+  <template id="productTemplate">
+    <article class="product-card">
+      <div class="product-visual"><span class="product-monogram"></span><span class="product-tag"></span></div>
+      <div class="product-body">
+        <div class="product-category"></div>
+        <h3 class="product-name"></h3>
+        <p class="product-description"></p>
+        <div class="product-price"></div>
+        <div class="purchase-row">
+          <div class="qty-control">
+            <button class="qty-minus" aria-label="Decrease quantity">−</button>
+            <input class="qty-input" type="number" min="1" value="1" aria-label="Quantity">
+            <button class="qty-plus" aria-label="Increase quantity">+</button>
+          </div>
+          <button class="buy-button">Buy</button>
+        </div>
+        <div class="owned-row"><span class="owned-count"></span><button class="max-button">MAX</button></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
