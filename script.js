@@ -147,6 +147,123 @@
   function escapeHtml(str) { return str.replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
   function monogram(name) { return name.split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase(); }
 
+  // Image system: fetches openly licensed/reusable images from Wikimedia Commons at runtime.
+  // Images are lazy-loaded and cached locally so the catalog stays small and fast.
+  const IMAGE_CACHE_KEY = 'spend-fortune-images-v1';
+  const imageCache = (() => {
+    try { return JSON.parse(localStorage.getItem(IMAGE_CACHE_KEY) || '{}'); } catch (e) { return {}; }
+  })();
+  const imageRequests = new Map();
+  const imageObserver = 'IntersectionObserver' in window
+    ? new IntersectionObserver(entries => entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        imageObserver.unobserve(img);
+        const card = img.closest('.product-card');
+        const productId = card?.dataset.productId;
+        const product = products.find(p => p.id === productId);
+        if (product) loadProductImage(img, product, card);
+      }), { rootMargin: '250px 0px' })
+    : null;
+
+  function saveImageCache() {
+    try { localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(imageCache)); } catch (e) {}
+  }
+
+  function normalizeSearch(s) {
+    return s.replace(/[^a-zA-Z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function licenseIsReusable(meta) {
+    const license = String(meta?.LicenseShortName?.value || meta?.LicenseShortName || meta?.UsageTerms?.value || '').toLowerCase();
+    return /cc0|cc by|cc-by|public domain|pdm|free art license|fal/.test(license);
+  }
+
+  function pickCommonsPage(pages, query) {
+    const tokens = normalizeSearch(query).toLowerCase().split(/\s+/).filter(Boolean);
+    const candidates = Object.values(pages || {})
+      .filter(page => page.imageinfo?.[0]?.thumburl && licenseIsReusable(page.imageinfo[0].extmetadata))
+      .map(page => {
+        const title = (page.title || '').replace(/^File:/i, '').toLowerCase();
+        const score = tokens.reduce((sum, token) => sum + (title.includes(token) ? 2 : 0), 0);
+        return { page, score };
+      })
+      .sort((a,b) => b.score - a.score);
+    return candidates[0]?.page || null;
+  }
+
+  async function commonsSearch(query) {
+    const clean = normalizeSearch(query);
+    if (!clean) return null;
+    const url = 'https://commons.wikimedia.org/w/api.php?action=query&generator=search'
+      + '&gsrnamespace=6&gsrlimit=6&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=720'
+      + '&format=json&origin=*'
+      + '&gsrsearch=' + encodeURIComponent(clean);
+    try {
+      const response = await fetch(url, { mode:'cors' });
+      if (!response.ok) throw new Error('image lookup failed');
+      const data = await response.json();
+      return pickCommonsPage(data.query?.pages, clean);
+    } catch (e) { return null; }
+  }
+
+  function fallbackImageUrl(product) {
+    // No external fallback is used; the CSS placeholder keeps the card usable offline.
+    return '';
+  }
+
+  async function loadProductImage(img, product, card) {
+    if (img.dataset.loaded || imageRequests.has(product.id)) return;
+    img.dataset.loading = '1';
+
+    if (imageCache[product.id]?.url) {
+      applyImageResult(img, card, imageCache[product.id]);
+      return;
+    }
+
+    const request = (async () => {
+      // Search exact product first, then a category-level query as a visual fallback.
+      const exact = await commonsSearch(`${product.name} ${product.category}`);
+      const page = exact || await commonsSearch(product.category);
+      if (!page?.imageinfo?.[0]?.thumburl) return null;
+      const info = page.imageinfo[0];
+      const meta = info.extmetadata || {};
+      return {
+        url: info.thumburl,
+        source: `https://commons.wikimedia.org/?curid=${page.pageid}`,
+        title: (page.title || '').replace(/^File:/i, ''),
+        artist: String(meta.Artist?.value || '').replace(/<[^>]*>/g, '').trim().slice(0, 120),
+        license: String(meta.LicenseShortName?.value || meta.LicenseShortName || '').trim().slice(0, 80)
+      };
+    })();
+
+    imageRequests.set(product.id, request);
+    const result = await request;
+    imageRequests.delete(product.id);
+    delete img.dataset.loading;
+    if (!result?.url) return;
+
+    imageCache[product.id] = result;
+    saveImageCache();
+    applyImageResult(img, card, result);
+  }
+
+  function applyImageResult(img, card, result) {
+    img.src = result.url;
+    img.alt = card.querySelector('.product-name')?.textContent || 'Product image';
+    img.addEventListener('load', () => img.classList.add('is-loaded'), { once:true });
+    img.addEventListener('error', () => { img.classList.remove('is-loaded'); }, { once:true });
+    const credit = card.querySelector('.image-credit');
+    if (credit) {
+      credit.href = result.source;
+      const label = result.artist ? `Image: ${result.artist}` : 'Image: Wikimedia Commons';
+      credit.textContent = label.length > 34 ? `${label.slice(0,31)}…` : label;
+      credit.hidden = false;
+      credit.title = [result.title, result.license].filter(Boolean).join(' · ');
+    }
+  }
+
+
   function save() {
     if (!state.fortune) return;
     localStorage.setItem('spend-fortune-v1', JSON.stringify({ ...state, unlocked:[...state.unlocked] }));
@@ -271,6 +388,7 @@
     const frag = document.createDocumentFragment();
     list.forEach(p => {
       const card = $('#productTemplate').content.firstElementChild.cloneNode(true);
+      card.dataset.productId = p.id;
       $('.product-monogram', card).textContent = monogram(p.name);
       $('.product-tag', card).textContent = p.category;
       $('.product-category', card).textContent = p.category;
@@ -279,6 +397,9 @@
       $('.product-price', card).textContent = format(p.price);
       const owned = getOwned(p);
       $('.owned-count', card).textContent = owned ? `${owned.toLocaleString()} owned` : 'Not owned yet';
+      const img = $('.product-image', card);
+      if (imageObserver) imageObserver.observe(img);
+      else loadProductImage(img, p, card);
       const input = $('.qty-input', card);
       const minus = $('.qty-minus', card);
       const plus = $('.qty-plus', card);
