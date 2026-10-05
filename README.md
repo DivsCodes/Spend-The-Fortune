@@ -1,4 +1,4 @@
-# Spend the Fortune
+# Spend the Fortune V1.5
 
 A polished browser-based wealth simulator where you choose a fictional fortune and spend it on hundreds of cars, jets, yachts, properties, businesses, technology, travel, charity projects, space missions, and deliberately ridiculous purchases.
 
