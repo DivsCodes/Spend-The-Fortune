@@ -1,47 +1,28 @@
-# Spend the Fortune V1.5
+# Spend the Fortune v2.1
 
-A polished browser-based wealth simulator where you choose a fictional fortune and spend it on hundreds of cars, jets, yachts, properties, businesses, technology, travel, charity projects, space missions, and deliberately ridiculous purchases.
+A polished browser-based billionaire spending simulator built with vanilla HTML, CSS and JavaScript.
 
-Built with plain HTML, CSS, and JavaScript. No backend, build step, or dependencies are required.
+## v2.1 highlights
 
-## Features
-
-- Multiple starting fortunes, including custom mode
-- 300+ fictional/illustrative purchases across 19 categories
-- Search, filtering, sorting, quantity controls, and maximum affordable purchase
-- Live fortune balance, spending progress, item count, and category stats
-- Spending report with category breakdown
-- Purchase history stored locally in the browser
-- Achievement system with 16 milestones
-- Challenges that change as you play
-- Sound toggle and lightweight purchase/achievement effects
-- Responsive desktop and mobile layout
-- GitHub Pages friendly static deployment
+- 450 purchasable items across 19 categories.
+- Fortune presets with country names and emoji flags.
+- USD, INR, EUR and GBP display modes.
+- Local browser save, reset, undo, favorites, filters, sorting, achievements, challenges and reports.
+- Big-ticket cards open the exact matching shop item without destroying the current run.
+- Product photography is real-photo-first and title-matched through Wikipedia/Wikimedia Commons.
+- No random category images and no AI-generated image fallback.
+- Duplicate image assignments are blocked with a reservation system that prevents async race conditions.
+- Images are lazy-loaded with a small concurrency queue so navigation and category changes stay responsive.
+- When a strong verified real photo cannot be found, the site intentionally shows a clean placeholder rather than a misleading or unrelated image.
 
 ## Run locally
 
-Open `index.html` in a browser. No installation is required.
+Open `index.html` with VS Code Live Server or another static web server. Image lookup requires an internet connection because photographs are resolved from Wikipedia/Wikimedia Commons at runtime.
 
-## Deploy
+## Photo licensing
 
-This is a static site and works with GitHub Pages, Vercel, Netlify, Cloudflare Pages, and similar static hosts.
+Images are pulled from Wikimedia projects and should be checked individually on their source page for license and attribution requirements. The site links to the source photo/page where available.
 
-## Project structure
+## Notes
 
-```text
-spend-the-fortune/
-├── index.html
-├── style.css
-├── script.js
-└── README.md
-```
-
-## Data and pricing note
-
-Fortunes and product prices are simplified, illustrative values for entertainment. They are not intended to represent current net worths, market prices, or financial advice.
-
-The app stores only local gameplay state in browser `localStorage` and does not require an account or backend.
-
-## Images
-
-Product imagery is loaded lazily from Wikimedia Commons when an item card enters view. The app only uses results identified as reusable/public-domain style licenses (such as CC BY, CC BY-SA, CC0, or public domain) and shows a source link on the card when an image is available. If no suitable image is found, the catalog keeps a lightweight visual placeholder instead of blocking the purchase UI.
+Real-person fortunes are dated wealth snapshots from published sources. Product prices are illustrative game values and are not financial advice.
