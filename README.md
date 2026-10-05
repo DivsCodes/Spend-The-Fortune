@@ -1,36 +1,47 @@
-# Spend the Fortune v1.0
+# Spend the Fortune
 
-The first full release of Spend the Fortune — a browser-based wealth-spending simulator where you can choose a fortune and see how quickly you can spend it.
+A polished browser-based wealth simulator where you choose a fictional fortune and spend it on hundreds of cars, jets, yachts, properties, businesses, technology, travel, charity projects, space missions, and deliberately ridiculous purchases.
 
-## What's Included
+Built with plain HTML, CSS, and JavaScript. No backend, build step, or dependencies are required.
 
-- 380+ purchasable items
-- 19 categories
-- Multiple fortune presets
-- Custom fortune mode
-- Search and category filtering
-- Price and ownership sorting
-- Quantity controls
-- Maximum affordable purchases
-- Live fortune and spending tracking
-- Spending statistics and category breakdowns
-- Purchase history
-- 16 achievements
-- Challenges
-- Buy Everything mode
-- Sound effects and mute controls
-- Shareable spending results
-- Local save data
-- Responsive desktop and mobile interface
+## Features
 
-## Technical
+- Multiple starting fortunes, including custom mode
+- 300+ fictional/illustrative purchases across 19 categories
+- Search, filtering, sorting, quantity controls, and maximum affordable purchase
+- Live fortune balance, spending progress, item count, and category stats
+- Spending report with category breakdown
+- Purchase history stored locally in the browser
+- Achievement system with 16 milestones
+- Challenges that change as you play
+- Sound toggle and lightweight purchase/achievement effects
+- Responsive desktop and mobile layout
+- GitHub Pages friendly static deployment
 
-Built with vanilla HTML, CSS, and JavaScript.
+## Run locally
 
-No backend, frameworks, or external dependencies are required.
+Open `index.html` in a browser. No installation is required.
 
-## Disclaimer
+## Deploy
 
-Fortune values for public figures are illustrative estimates and are not affiliated with or endorsed by the individuals shown.
+This is a static site and works with GitHub Pages, Vercel, Netlify, Cloudflare Pages, and similar static hosts.
 
-Have fun spending your fortune.
+## Project structure
+
+```text
+spend-the-fortune/
+├── index.html
+├── style.css
+├── script.js
+└── README.md
+```
+
+## Data and pricing note
+
+Fortunes and product prices are simplified, illustrative values for entertainment. They are not intended to represent current net worths, market prices, or financial advice.
+
+The app stores only local gameplay state in browser `localStorage` and does not require an account or backend.
+
+## Images
+
+Product imagery is loaded lazily from Wikimedia Commons when an item card enters view. The app only uses results identified as reusable/public-domain style licenses (such as CC BY, CC BY-SA, CC0, or public domain) and shows a source link on the card when an image is available. If no suitable image is found, the catalog keeps a lightweight visual placeholder instead of blocking the purchase UI.
