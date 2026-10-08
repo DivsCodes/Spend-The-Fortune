@@ -25,6 +25,7 @@
           <h1>SPEND<br><span>THE FORTUNE.</span></h1>
           <p class="hero-copy">Pick a fortune. Walk into the world's most unnecessary shopping spree. Find out how much money it takes to feel broke.</p>
           <div class="hero-actions">
+            <button class="primary-button" id="randomFortuneBtn" type="button">Surprise me</button><button class="secondary-button" id="richListBtn" type="button">Rich List</button>
             <span class="hero-chip">450+ purchasable items</span>
             <span class="hero-chip">19 categories</span>
             <span class="hero-chip">Local save</span>
@@ -83,6 +84,10 @@
           <button class="icon-button" id="undoBtn" title="Undo your last purchase">Undo</button>
           <button class="icon-button" id="soundBtn" title="Toggle sound">Sound</button>
           <button class="icon-button" id="historyBtn" title="View purchase history">History</button>
+          <button class="icon-button" id="achievementsBtn" title="View achievements">Awards</button>
+          <button class="icon-button fun-button" id="chaosBtn" title="Randomly buy a mini shopping spree">Chaos</button>
+          <button class="icon-button fun-button" id="dailyBtn" title="Open today's challenge">Daily</button>
+          <button class="icon-button" id="duelBtn" title="Compare your run with another fortune">Duel</button><button class="icon-button fun-button" id="roastBtn" title="Roast your spending">Roast</button><button class="icon-button fun-button" id="portfolioBtn" title="View your spending portfolio">Portfolio</button>
           <button class="outline-button" id="resetBtn">Reset</button>
         </div>
       </header>
@@ -97,6 +102,7 @@
           </div>
           <div class="wealth-actions">
             <button class="secondary-button" id="luckyBtn">Lucky buy</button>
+            <button class="secondary-button" id="spinBtn">Spin the wheel</button><button class="secondary-button" id="jackpotBtn">Jackpot</button>
             <button type="button" class="primary-button" id="reportBtn">View report</button>
             <button type="button" class="ghost-button" id="buyEverythingBtn">Buy everything</button>
           </div>
@@ -120,6 +126,8 @@
         <div class="stat"><span>Achievements</span><strong id="achievementCount">0 / 16</strong></div>
         <div class="stat"><span>Favorites</span><strong id="favoriteCountStat">0</strong></div>
       </section>
+
+      <div class="quick-actions"><button type="button" class="quick-action" id="randomItemBtn">Random item</button><button type="button" class="quick-action" id="cheapestBtn">Buy cheapest</button><button type="button" class="quick-action" id="mostExpensiveBtn">Biggest flex</button><button type="button" class="quick-action" id="copyStatsBtn">Copy stats</button></div>
 
       <div class="ticker-bar"><span class="ticker-label">LIVE FEED</span><span class="ticker-dot"></span><span id="tickerText">The shop is open. Your fortune is not safe.</span></div>
 
@@ -150,6 +158,7 @@
             <div class="toolbar-right">
               <label class="toggle-pill"><input id="affordableOnly" type="checkbox"><span>Affordable</span></label>
               <label class="toggle-pill"><input id="ownedOnly" type="checkbox"><span>Owned</span></label>
+              <button type="button" class="clear-filters-button" id="clearFiltersBtn">Clear</button>
               <select id="sortSelect" class="select-control" aria-label="Sort products">
                 <option value="featured">Featured</option>
                 <option value="price-desc">Price: high to low</option>
@@ -195,7 +204,7 @@
       </div>
       <div class="product-body">
         <div class="product-category"></div>
-        <div class="product-title-row"><h3 class="product-name"></h3><strong class="product-price"></strong></div>
+        <div class="product-title-row"><div><h3 class="product-name"></h3><span class="price-share"></span></div><strong class="product-price"></strong></div>
         <p class="product-description"></p>
         <div class="purchase-row">
           <div class="qty-control">
@@ -204,6 +213,7 @@
             <button class="qty-plus" aria-label="Increase quantity">+</button>
           </div>
           <button class="buy-button">Buy now</button>
+          <button class="buy10-button" type="button" title="Buy 10">×10</button>
         </div>
         <div class="owned-row"><span class="owned-count"></span><button class="max-button">MAX</button></div>
       </div>
@@ -218,6 +228,7 @@
     </button>
   </template>
 
+  <script src="assets/product-images/manifest.js"></script>
   <script src="script.js" defer></script>
 </body>
 </html>

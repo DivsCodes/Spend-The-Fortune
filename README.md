@@ -1,28 +1,48 @@
-# Spend the Fortune v2.1
+# Spend the Fortune — V2.4 Fun Edition
 
-A polished browser-based billionaire spending simulator built with vanilla HTML, CSS and JavaScript.
+A browser-based billionaire spending simulator built with vanilla HTML, CSS and JavaScript.
 
-## v2.1 highlights
+## What changed in V2.4
 
-- 450 purchasable items across 19 categories.
-- Fortune presets with country names and emoji flags.
-- USD, INR, EUR and GBP display modes.
-- Local browser save, reset, undo, favorites, filters, sorting, achievements, challenges and reports.
-- Big-ticket cards open the exact matching shop item without destroying the current run.
-- Product photography is real-photo-first and title-matched through Wikipedia/Wikimedia Commons.
-- No random category images and no AI-generated image fallback.
-- Duplicate image assignments are blocked with a reservation system that prevents async race conditions.
-- Images are lazy-loaded with a small concurrency queue so navigation and category changes stay responsive.
-- When a strong verified real photo cannot be found, the site intentionally shows a clean placeholder rather than a misleading or unrelated image.
+- Added **Chaos Spree**: instantly buys a randomized mini shopping spree from affordable items.
+- Added **Daily Drop**: a date-based daily challenge with a one-per-day clear state.
+- Added **Spin the Fortune Wheel**: randomly selects an affordable item and lets you accept or spin again.
+- Added **Fortune Duel**: compare the same spending amount against another fortune.
+- Added quick actions for **Random Item**, **Buy Cheapest**, **Biggest Flex**, and **Copy Stats**.
+- Daily challenge completion is stored separately and the Daily button shows a completion check for the current day.
+- Moved this build to dedicated V2.4 save/image-memory namespaces so older V2.1–V2.3 browser state cannot collide with it.
+- Kept the V2.3 fixes: filter reset, currency-aware challenge text, Big-ticket navigation protection, clean supplied car crops, title-based local image mapping, Awards, Surprise Me, ×10 buying, price-to-fortune indicators, history, reports, themes, sound and sharing.
 
-## Run locally
+## Images
 
-Open `index.html` with VS Code Live Server or another static web server. Image lookup requires an internet connection because photographs are resolved from Wikipedia/Wikimedia Commons at runtime.
+The supplied local images live in `assets/product-images/` and are mapped by exact product title in `manifest.js`. Products without a supplied local image use the strict real-photo resolver; if it cannot find a strong match, the card uses a neutral placeholder rather than a random category image.
 
-## Photo licensing
+The bundled supplied images are realistic generated product imagery, not verified documentary photographs.
 
-Images are pulled from Wikimedia projects and should be checked individually on their source page for license and attribution requirements. The site links to the source photo/page where available.
+## Running locally
+
+Open the folder with VS Code and use Live Server, or serve it with any static HTTP server.
+
+## Deployment
+
+The project is static and can be deployed to GitHub Pages or another static host.
 
 ## Notes
 
-Real-person fortunes are dated wealth snapshots from published sources. Product prices are illustrative game values and are not financial advice.
+Product prices are game estimates and the experience is entertainment, not financial advice. Real-person fortunes are dated illustrative snapshots rather than live account balances.
+
+
+## v2.5 Rich List + Fun Pack
+- Added small portrait thumbnails for real-person fortune choices, with country flags. Portraits are loaded from Wikimedia Commons at runtime and cached locally; fictional/custom modes use a fallback badge.
+- Added Rich List modal with ranked fortunes.
+- Added Spending Roast, Portfolio breakdown, and Jackpot pick.
+- Kept the v2.4 Chaos, Daily, Duel, Wheel, Surprise Me, Awards, report, and filter tools.
+- Portraits are informational UI imagery; Wikimedia image licenses/attribution apply to individual source files.
+
+
+## V2.5.1.1 fixes
+- Added bundled locally generated billionaire portrait assets for the matching fortunes; no portrait API call is required.
+- Fixed missing burstConfetti runtime function used by Daily Challenge and Chaos Spree.
+- Isolated V2.5.1.1 save, image-cache, and portrait-cache keys.
+- Optimized Buy Everything to perform a single bulk state update instead of hundreds of individual UI/save operations.
+- Reset now clears the portrait cache too.

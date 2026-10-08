@@ -191,12 +191,12 @@
   const state = {
     screen:'landing', fortune:null, starting:0, balance:0, spent:0, purchases:{}, totalItems:0,
     selectedCategory:'All', search:'', sort:'featured', sound:true, challenge:0, unlocked:new Set(), favorites:new Set(),
-    affordableOnly:false, ownedOnly:false, favoritesOnly:false, lastPurchase:null, theme:'violet', sessionStarted:null, currency:'USD'
+    affordableOnly:false, ownedOnly:false, favoritesOnly:false, lastPurchase:null, theme:'violet', sessionStarted:null, currency:'USD', dailyKey:'', dailyDone:false, spreeCount:0, runStreak:0, purchaseCount:0, jackpotWins:0
   };
 
   const els = {
     landing:$('#landing'), store:$('#store'), fortuneGrid:$('#fortuneGrid'), balance:$('#balance'), spent:$('#spent'), itemsOwned:$('#itemsOwned'), progressFill:$('#progressFill'), progressLeft:$('#progressLeft'), progressRight:$('#progressRight'),
-    largestPurchase:$('#largestPurchase'), averagePurchase:$('#averagePurchase'), categoriesOwned:$('#categoriesOwned'), achievementCount:$('#achievementCount'), favoriteCountStat:$('#favoriteCountStat'), categoryList:$('#categoryList'), favoritesBtn:$('#favoritesBtn'), favoriteCount:$('#favoriteCount'), searchInput:$('#searchInput'), sortSelect:$('#sortSelect'), affordableOnly:$('#affordableOnly'), ownedOnly:$('#ownedOnly'), catalogEyebrow:$('#catalogEyebrow'), catalogTitle:$('#catalogTitle'), resultCount:$('#resultCount'), productGrid:$('#productGrid'), emptyState:$('#emptyState'), modal:$('#modal'), modalClose:$('#modalClose'), modalContent:$('#modalContent'), toast:$('#toast'), confetti:$('#confetti'), challengeText:$('#challengeText'), soundBtn:$('#soundBtn'), undoBtn:$('#undoBtn'), themeBtn:$('#themeBtn'), runMode:$('#runMode'), wealthStatus:$('#wealthStatus'), fortuneName:$('#fortuneName'), fortuneCountry:$('#fortuneCountry'), fortuneTier:$('#fortuneTier'), burnRate:$('#burnRate'), lastMove:$('#lastMove'), tickerText:$('#tickerText'), spotlightGrid:$('#spotlightGrid'), luckyBtn:$('#luckyBtn'), randomizeSpotlight:$('#randomizeSpotlight'), challengeIndex:$('#challengeIndex')
+    largestPurchase:$('#largestPurchase'), averagePurchase:$('#averagePurchase'), categoriesOwned:$('#categoriesOwned'), achievementCount:$('#achievementCount'), favoriteCountStat:$('#favoriteCountStat'), categoryList:$('#categoryList'), favoritesBtn:$('#favoritesBtn'), favoriteCount:$('#favoriteCount'), searchInput:$('#searchInput'), sortSelect:$('#sortSelect'), affordableOnly:$('#affordableOnly'), ownedOnly:$('#ownedOnly'), catalogEyebrow:$('#catalogEyebrow'), catalogTitle:$('#catalogTitle'), resultCount:$('#resultCount'), productGrid:$('#productGrid'), emptyState:$('#emptyState'), modal:$('#modal'), modalClose:$('#modalClose'), modalContent:$('#modalContent'), toast:$('#toast'), confetti:$('#confetti'), challengeText:$('#challengeText'), soundBtn:$('#soundBtn'), undoBtn:$('#undoBtn'), themeBtn:$('#themeBtn'), runMode:$('#runMode'), wealthStatus:$('#wealthStatus'), fortuneName:$('#fortuneName'), fortuneCountry:$('#fortuneCountry'), fortuneTier:$('#fortuneTier'), burnRate:$('#burnRate'), lastMove:$('#lastMove'), tickerText:$('#tickerText'), spotlightGrid:$('#spotlightGrid'), luckyBtn:$('#luckyBtn'), randomizeSpotlight:$('#randomizeSpotlight'), challengeIndex:$('#challengeIndex'), dailyBtn:$('#dailyBtn')
   };
 
   function compact(v) { return v === 0 ? currencyOptions[activeCurrency].symbol+'0' : formatter(v,true); }
@@ -209,7 +209,48 @@
   // Real-photo-first, exact-title matching. There is deliberately NO random
   // category image and NO AI fallback. If a strong real photo cannot be verified,
   // the card shows a clean placeholder instead of lying about the subject.
-  const imageMemoryKey = 'spend-fortune-v21-images';
+  const imageMemoryKey = 'spend-fortune-v251-images';
+  const SAVE_KEY = 'spend-fortune-v251';
+  const PORTRAIT_KEY = 'spend-fortune-v251-portraits';
+  const portraitCache = {};
+  try { Object.assign(portraitCache, JSON.parse(localStorage.getItem(PORTRAIT_KEY) || '{}')); } catch(e) {}
+  function savePortraitCache(){ try { localStorage.setItem(PORTRAIT_KEY, JSON.stringify(portraitCache)); } catch(e) {} }
+  function portraitSearchName(f){
+    const aliases = {
+      musk:'Elon Musk', bezos:'Jeff Bezos', page:'Larry Page', dell:'Michael Dell', brin:'Sergey Brin',
+      zuck:'Mark Zuckerberg', ellison:'Larry Ellison', huang:'Jensen Huang', ballmer:'Steve Ballmer',
+      buffett:'Warren Buffett', gates:'Bill Gates', bloomberg:'Michael Bloomberg', ambani:'Mukesh Ambani',
+      adani:'Gautam Adani', lakshmi:'Lakshmi Mittal', sunil:'Sunil Mittal', dilip:'Dilip Shanghvi',
+      roshni:'Roshni Nadar Malhotra', cyrus:'Cyrus Poonawalla', birla:'Kumar Mangalam Birla', premji:'Azim Premji'
+    };
+    return aliases[f.id] || f.name.replace(/& family|family/gi,'').trim();
+  }
+  const LOCAL_PORTRAITS = {
+    musk:'assets/portraits/musk.jpg', bezos:'assets/portraits/bezos.jpg', zuck:'assets/portraits/zuck.jpg',
+    ellison:'assets/portraits/ellison.jpg', buffett:'assets/portraits/buffett.jpg', gates:'assets/portraits/gates.jpg',
+    ambani:'assets/portraits/ambani.jpg', adani:'assets/portraits/adani.jpg', ballmer:'assets/portraits/ballmer.jpg',
+    page:'assets/portraits/page.jpg', brin:'assets/portraits/brin.jpg', huang:'assets/portraits/huang.jpg',
+    dilip:'assets/portraits/dilip.jpg'
+  };
+  function loadPortrait(f, img){
+    if(!img || !f || f.id==='custom' || f.id==='mega' || f.id==='million') return;
+    const fallback = img.parentElement?.querySelector('.fortune-initial, b');
+    const revealFallback = () => {
+      img.classList.remove('loaded');
+      img.hidden = true;
+      if(fallback) fallback.hidden = false;
+    };
+    img.hidden = false;
+    if(fallback) fallback.hidden = true;
+    img.onerror = revealFallback;
+    const local = LOCAL_PORTRAITS[f.id];
+    if(local){ img.src=local; img.classList.add('loaded'); return; }
+    const cached=portraitCache[f.id];
+    if(cached && /^https?:\/\//i.test(cached)){ img.src=cached; img.classList.add('loaded'); return; }
+    revealFallback();
+  }
+
+  const LOCAL_PRODUCT_IMAGES = window.LOCAL_PRODUCT_IMAGES || {};
   const imageMap = new Map();
   const usedImageKeys = new Set();
   const reservedImageKeys = new Set(); // prevents async duplicate races
@@ -396,6 +437,12 @@
   }
 
   async function resolveRealPhoto(p){
+    const localPath = LOCAL_PRODUCT_IMAGES[p.name];
+    if(localPath){
+      const key = `local-image:${localPath}`;
+      if(!imageMap.has(p.id)) imageMap.set(p.id, makeMeta({id:key,title:`Bundled generated image — ${p.name}`,url:localPath,fullUrl:localPath,landingUrl:'',width:0,height:0,source:'Bundled generated image'}));
+      return imageMap.get(p.id);
+    }
     if(imageMap.has(p.id)) return imageMap.get(p.id);
     if(imagePending.has(p.id)) return imagePending.get(p.id);
     const job=(async()=>{
@@ -458,7 +505,7 @@
     img.onload=()=>{
       img.classList.add('is-loaded'); img.dataset.loading='';
       if(credit){
-        credit.hidden=false; credit.textContent='Open source photo';
+        credit.hidden=false; credit.textContent=meta.source==='Bundled generated image' ? 'Bundled image' : 'Open source photo';
         if(meta.landingUrl){credit.href=meta.landingUrl;credit.target='_blank';credit.rel='noopener';}
       }
       reservedImageKeys.delete(meta.key);
@@ -526,13 +573,13 @@
 
   function save() {
     if (!state.fortune) return;
-    localStorage.setItem('spend-fortune-v21', JSON.stringify({
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
       ...state, unlocked:[...state.unlocked], favorites:[...state.favorites]
     }));
   }
   function load() {
     try {
-      const raw = localStorage.getItem('spend-fortune-v21');
+      const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
       Object.assign(state, data);
@@ -576,6 +623,70 @@
     if (amount >= 1e5) return 'HIGH ROLLER';
     return 'BIG SPENDER';
   }
+  function todayKey(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+  function dailyChallenge(){
+    const seed = Number(todayKey().replace(/-/g,''));
+    const pool = [
+      {title:'THE ONE-TAP MILLION', text:'Spend at least $1M using no more than 3 purchases.', test:()=>state.spent>=1e6 && state.totalItems<=3},
+      {title:'CATEGORY HOPPER', text:'Buy something from 5 different categories.', test:()=>categories.filter(c=>c[0]!=='All').filter(c=>categoryOwned(c[0])).length>=5},
+      {title:'BIG FLEX', text:'Make a single purchase worth at least $10M.', test:()=>Object.keys(state.purchases).some(id=>{const p=products.find(x=>x.id===id);return p&&p.price>=1e7})},
+      {title:'DIVERSIFIED DEGEN', text:'Own 20 different products.', test:()=>Object.values(state.purchases).filter(x=>x.qty>0).length>=20},
+      {title:'BURN RATE', text:'Spend 5% of your starting fortune.', test:()=>state.starting>0&&state.spent/state.starting>=.05},
+      {title:'CHARITY FLEX', text:'Put at least $5M into charity.', test:()=>categorySpent('Charity')>=5e6},
+      {title:'GO BROKE', text:'Reach zero balance.', test:()=>state.balance<=0.0001}
+    ];
+    return pool[seed % pool.length];
+  }
+  function dailyHtml(){
+    const c=dailyChallenge(); const key=todayKey(); const done=state.dailyKey===key&&state.dailyDone;
+    return `<div><span class="eyebrow">DAILY DROP · ${key}</span><h2 class="modal-title">${escapeHtml(c.title)}</h2><p class="modal-subtitle">${escapeHtml(c.text)}</p><div class="report-card"><span>Status</span><strong>${done?'CLEARED':'IN PROGRESS'}</strong></div><p class="modal-subtitle" style="margin-top:14px">Complete it once today for a little extra bragging rights. The challenge resets with the date.</p><button class="primary-button" style="margin-top:18px" id="dailyCheckBtn">Check challenge</button></div>`;
+  }
+  function checkDaily(){
+    const c=dailyChallenge(); const key=todayKey();
+    if(c.test()){
+      state.dailyKey=key; state.dailyDone=true; save(); burstConfetti(); playBuy(); showToast('Daily challenge cleared. Massive W.');
+    } else showToast('Not yet. Keep cooking.');
+    openModal(dailyHtml());
+  }
+  function chaosBuy(){
+    if(!state.fortune) return;
+    const pool=products.filter(p=>p.price<=state.balance);
+    if(!pool.length) return showToast('You cannot afford a chaos spree.');
+    const picks=[...pool].sort(()=>Math.random()-.5).slice(0,Math.min(6,pool.length));
+    let bought=0;
+    picks.forEach(p=>{ if(state.balance>=p.price){ const qty=Math.random()<.8?1:Math.min(3,Math.max(1,Math.floor(state.balance/p.price))); buy(p,qty); bought++; }});
+    state.spreeCount=(state.spreeCount||0)+1; save(); renderProducts(); showToast(`Chaos spree complete: ${bought} different items.`); burstConfetti();
+  }
+  function spinWheel(){
+    const affordable=products.filter(p=>p.price<=state.balance);
+    if(!affordable.length) return showToast('The wheel found nothing you can afford.');
+    const p=affordable[Math.floor(Math.random()*affordable.length)];
+    openModal(`<div class="wheel-modal"><span class="eyebrow">SPIN THE FORTUNE WHEEL</span><h2 class="modal-title">${escapeHtml(p.name)}</h2><p class="modal-subtitle">The wheel picked a ${escapeHtml(p.category)} item.</p><div class="wheel-result"><strong>${format(p.price)}</strong><span>${escapeHtml(p.description)}</span></div><button class="primary-button" id="spinBuyBtn">Buy it</button><button class="ghost-button" id="spinAgainBtn">Spin again</button></div>`);
+    $('#spinBuyBtn')?.addEventListener('click',()=>{buy(p,1);closeModal();renderProducts();});
+    $('#spinAgainBtn')?.addEventListener('click',spinWheel);
+  }
+  function duelHtml(){
+    const others=fortunes.filter(f=>f.amount&&f.name!==state.fortune).sort(()=>Math.random()-.5); const f=others[0];
+    const yourPct=state.starting?state.spent/state.starting:0; const theirPct=state.starting&&f.amount?Math.min(1,state.spent/f.amount):0;
+    return `<div><span class="eyebrow">FORTUNE DUEL</span><h2 class="modal-title">You vs. ${escapeHtml(f.name)}</h2><p class="modal-subtitle">Same shopping spree, wildly different wallets.</p><div class="duel-grid"><div class="report-card"><span>You burned</span><strong>${pct(yourPct)}</strong></div><div class="report-card"><span>${escapeHtml(f.name)} would burn</span><strong>${pct(theirPct)}</strong></div></div><p class="modal-subtitle" style="margin-top:16px">At your current spending, ${escapeHtml(f.name)} would have ${format(Math.max(0,f.amount-state.spent))} left.</p><button class="primary-button" id="duelAgainBtn">Rematch</button></div>`;
+  }
+  function openDuel(){openModal(duelHtml()); $('#duelAgainBtn')?.addEventListener('click',openDuel);}
+  function copyStats(){
+    const text=`SPEND THE FORTUNE — ${state.fortune}\nSpent: ${format(state.spent)}\nRemaining: ${format(state.balance)}\nItems: ${state.totalItems.toLocaleString()}\nFortune burned: ${pct(state.starting?state.spent/state.starting:0)}\nAchievements: ${state.unlocked.size}/${achievements.length}`;
+    if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>showToast('Stats copied.')).catch(()=>prompt('Copy stats:',text));}else prompt('Copy stats:',text);
+  }
+  function buyExtreme(kind){
+    const list=products.filter(p=>p.price<=state.balance);
+    if(!list.length) return showToast('Nothing affordable right now.');
+    const p=kind==='cheap' ? [...list].sort((a,b)=>a.price-b.price)[0] : [...list].sort((a,b)=>b.price-a.price)[0];
+    buy(p,1); renderProducts();
+  }
+  function randomItem(){
+    const list=products.filter(p=>p.price<=state.balance); if(!list.length)return showToast('Nothing affordable.');
+    const p=list[Math.floor(Math.random()*list.length)];
+    state.search=p.name; els.searchInput.value=p.name; state.selectedCategory='All'; state.favoritesOnly=false; renderCategories(); renderProducts(); showToast(`Found: ${p.name}`);
+  }
+
   function updateTicker() {
     if (!els.tickerText) return;
     if (!state.fortune) return;
@@ -602,7 +713,7 @@
     els.store.classList.toggle('active', name === 'store');
     window.scrollTo({top:0, behavior:'instant'});
     if (state.fortune) {
-      try { localStorage.setItem('spend-fortune-v21', JSON.stringify({...state, unlocked:[...state.unlocked], favorites:[...state.favorites]})); } catch(e) {}
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify({...state, unlocked:[...state.unlocked], favorites:[...state.favorites]})); } catch(e) {}
     }
   }
 
@@ -611,7 +722,9 @@
     fortunes.forEach(f => {
       const button = document.createElement('button');
       button.className = `fortune-card ${f.id === 'custom' ? 'custom-card' : ''}`;
-      button.innerHTML = `<span class="fortune-name">${escapeHtml(f.name)}</span><span class="fortune-country">${f.flag || '🌍'} <span>${escapeHtml(f.country || 'Global')}</span></span><span class="fortune-meta"><span class="fortune-amount">${f.amount === null ? 'Custom' : format(f.amount)}</span><span class="fortune-note">${escapeHtml(f.note)}</span></span>`;
+      const portrait = (f.id!=='custom' && f.id!=='mega' && f.id!=='million') ? `<span class="fortune-portrait-wrap"><img class="fortune-portrait" alt="${escapeHtml(f.name)}" loading="lazy"><span class="fortune-initial">${escapeHtml((f.name||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join(''))}</span></span>` : `<span class="fortune-portrait-wrap fortune-generic"><span class="fortune-initial">${f.flag||'💰'}</span></span>`;
+      button.innerHTML = `${portrait}<span class="fortune-copy"><span class="fortune-name">${escapeHtml(f.name)}</span><span class="fortune-country">${f.flag || '🌍'} <span>${escapeHtml(f.country || 'Global')}</span></span><span class="fortune-meta"><span class="fortune-amount">${f.amount === null ? 'Custom' : format(f.amount)}</span><span class="fortune-note">${escapeHtml(f.note)}</span></span></span>`;
+      const img=button.querySelector('.fortune-portrait'); if(img) loadPortrait(f,img);
       button.addEventListener('click', () => {
         if (f.id === 'custom') {
           const raw = prompt(`Enter your starting fortune in ${activeCurrency}. Example: ${activeCurrency==='INR'?'10000000000':'2500000000'}`);
@@ -628,9 +741,12 @@
   }
 
   function startFortune(f) {
-    Object.assign(state, { fortune:f.name, starting:f.amount, balance:f.amount, spent:0, purchases:{}, totalItems:0, selectedCategory:'All', search:'', sort:'featured', unlocked:new Set(), sessionStarted:Date.now() });
+    Object.assign(state, { fortune:f.name, starting:f.amount, balance:f.amount, spent:0, purchases:{}, totalItems:0, selectedCategory:'All', search:'', sort:'featured', unlocked:new Set(), favoritesOnly:false, affordableOnly:false, ownedOnly:false, lastPurchase:null, sessionStarted:Date.now() });
     els.searchInput.value = '';
     els.sortSelect.value = 'featured';
+    if (els.favoritesBtn) els.favoritesBtn.classList.remove('active');
+    if (els.affordableOnly) els.affordableOnly.checked = false;
+    if (els.ownedOnly) els.ownedOnly.checked = false;
     if (els.fortuneName) els.fortuneName.textContent = f.name;
     if (els.fortuneCountry) els.fortuneCountry.textContent = `${f.flag || '🌍'} ${f.country || 'Global'}`;
     if (els.runMode) els.runMode.textContent = 'LIVE RUN';
@@ -645,8 +761,8 @@
   function resetGame() {
     if (!state.fortune) { showScreen('landing'); return; }
     if (!confirm('Reset this fortune and delete your current purchases?')) return;
-    localStorage.removeItem('spend-fortune-v21');
-    localStorage.removeItem(imageMemoryKey); imageMap.clear(); usedImageKeys.clear(); reservedImageKeys.clear(); imagePending.clear();
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(imageMemoryKey); localStorage.removeItem(PORTRAIT_KEY); imageMap.clear(); usedImageKeys.clear(); reservedImageKeys.clear(); imagePending.clear();
     Object.assign(state, { screen:'landing', fortune:null, starting:0, balance:0, spent:0, purchases:{}, totalItems:0, selectedCategory:'All', search:'', sort:'featured', unlocked:new Set(), favorites:new Set(), favoritesOnly:false, lastPurchase:null, sessionStarted:null });
     els.searchInput.value = '';
     els.sortSelect.value = 'featured';
@@ -744,6 +860,8 @@
       $('.product-description', card).textContent = p.description;
       $('.visual-price', card).textContent = compact(p.price);
       $('.product-price', card).textContent = format(p.price);
+      const priceShare = $('.price-share', card);
+      if (priceShare) { const ratio = state.starting ? p.price / state.starting : 0; priceShare.textContent = ratio > 1 ? `${ratio.toFixed(ratio < 10 ? 1 : 0)}× fortune` : `${pct(ratio)} of fortune`; }
       const rank = $('.product-rank', card);
       rank.textContent = index < 3 ? 'Featured' : p.featured <= 2 ? 'Hot' : 'Available';
       const owned = getOwned(p);
@@ -755,12 +873,14 @@
       const minus = $('.qty-minus', card);
       const plus = $('.qty-plus', card);
       const buyBtn = $('.buy-button', card);
+      const buy10Btn = $('.buy10-button', card);
       const maxBtn = $('.max-button', card);
       input.addEventListener('input', () => { input.value = Math.max(1, Math.floor(Number(input.value)||1)); });
       minus.addEventListener('click', () => input.value = Math.max(1, Number(input.value)-1));
       plus.addEventListener('click', () => input.value = Math.min(999999, Number(input.value)+1));
       maxBtn.addEventListener('click', () => { input.value = Math.max(1, Math.floor(state.balance / p.price)); });
       buyBtn.addEventListener('click', () => { buy(p, input.value); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); });
+      buy10Btn?.addEventListener('click', () => { buy(p, 10); card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash'); });
       const favoriteBtn = $('.favorite-button', card);
       favoriteBtn.textContent = state.favorites.has(p.id) ? '★' : '☆';
       favoriteBtn.classList.toggle('active', state.favorites.has(p.id));
@@ -773,24 +893,28 @@
 
   function openSpotlightProduct(p){
     if(!p || !state.fortune) return;
-    // This is a navigation action, never a filter action. Keep the run intact.
-    state.selectedCategory = p.category;
-    state.search = '';
-    state.favoritesOnly = false;
-    state.affordableOnly = false;
-    state.ownedOnly = false;
-    if(els.searchInput) els.searchInput.value='';
-    if(els.affordableOnly) els.affordableOnly.checked=false;
-    if(els.ownedOnly) els.ownedOnly.checked=false;
-    renderCategories();
-    renderProducts();
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      const target=els.productGrid.querySelector(`article[data-product-id="${p.id}"]`);
-      if(!target){showToast(`Could not open ${p.name}.`);return;}
-      target.scrollIntoView({behavior:'smooth',block:'center'});
-      target.classList.add('spotlight-target');
-      window.setTimeout(()=>target.classList.remove('spotlight-target'),1800);
-    }));
+    // Spotlight cards should NEVER leave the shop in a broken/filtered state.
+    // First try to locate the product in the current view; only if filters hide it
+    // do we restore a clean All Items view and then scroll to it.
+    const findTarget = () => els.productGrid?.querySelector(`article[data-product-id="${p.id}"]`);
+    let target = findTarget();
+    if(!target){
+      state.selectedCategory = 'All';
+      state.search = '';
+      state.favoritesOnly = false;
+      state.affordableOnly = false;
+      state.ownedOnly = false;
+      if(els.searchInput) els.searchInput.value='';
+      if(els.affordableOnly) els.affordableOnly.checked=false;
+      if(els.ownedOnly) els.ownedOnly.checked=false;
+      renderCategories();
+      renderProducts();
+      target = findTarget();
+    }
+    if(!target){ showToast(`Could not open ${p.name}.`); return; }
+    target.scrollIntoView({behavior:'smooth',block:'center'});
+    target.classList.add('spotlight-target');
+    window.setTimeout(()=>target.classList.remove('spotlight-target'),1800);
   }
 
   function renderSpotlight() {
@@ -873,12 +997,78 @@
     if (els.runMode) els.runMode.textContent = state.balance <= 0.0001 ? 'RUN COMPLETE' : 'LIVE RUN';
     if (els.wealthStatus) els.wealthStatus.textContent = state.balance <= 0.0001 ? 'YOU ARE BROKE' : (spentPct >= .75 ? 'SERIOUS DAMAGE' : "YOU'RE LOSING MONEY");
     updateChallengeCopy();
+    if (els.dailyBtn) els.dailyBtn.textContent = (state.dailyKey===todayKey() && state.dailyDone) ? 'Daily ✓' : 'Daily';
+  }
+
+  function challengeDisplayText(c) {
+    if (c.type === 'noCategory') return `Spend ${format(c.target)} without buying a car.`;
+    if (c.type === 'single') return `Buy one item worth at least ${format(c.target)}.`;
+    return c.text;
   }
 
   function updateChallengeCopy() {
     const c = challenges[state.challenge % challenges.length];
-    els.challengeText.textContent = c.text;
+    els.challengeText.textContent = challengeDisplayText(c);
     if (els.challengeIndex) els.challengeIndex.textContent = String((state.challenge % challenges.length) + 1).padStart(2,'0');
+  }
+
+  function clearFilters() {
+    state.selectedCategory = 'All';
+    state.search = '';
+    state.sort = 'featured';
+    state.affordableOnly = false;
+    state.ownedOnly = false;
+    state.favoritesOnly = false;
+    if (els.searchInput) els.searchInput.value = '';
+    if (els.sortSelect) els.sortSelect.value = 'featured';
+    if (els.affordableOnly) els.affordableOnly.checked = false;
+    if (els.ownedOnly) els.ownedOnly.checked = false;
+    renderCategories();
+    renderProducts();
+    showToast('All shop filters cleared.');
+  }
+
+  function achievementsHtml() {
+    return `<div><span class="eyebrow">ACHIEVEMENTS</span><h2 class="modal-title">Your flexes, documented.</h2><p class="modal-subtitle">${state.unlocked.size} of ${achievements.length} unlocked.</p><div class="achievement-list">${achievements.map((a,i)=>`<div class="achievement ${state.unlocked.has(i)?'unlocked':''}"><div class="achievement-title">${escapeHtml(a[0])}</div><div class="achievement-desc">${escapeHtml(a[1])}</div><div class="achievement-state">${state.unlocked.has(i)?'Unlocked':'Locked'}</div></div>`).join('')}</div></div>`;
+  }
+
+  function richListHtml(){
+    const list=fortunes.filter(f=>f.amount).sort((a,b)=>b.amount-a.amount);
+    return `<div><span class="eyebrow">THE RICH LIST</span><h2 class="modal-title">Pick a fortune. Then spend it.</h2><p class="modal-subtitle">Wealth snapshots shown with country flags and portrait thumbnails. Fictional modes are clearly marked.</p><div class="rich-list">${list.map((f,i)=>`<div class="rich-row"><span class="rich-rank">#${i+1}</span><span class="rich-avatar"><img data-portrait-id="${escapeHtml(f.id)}" alt="${escapeHtml(f.name)}"><b>${escapeHtml((f.name||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join(''))}</b></span><div class="rich-main"><strong>${escapeHtml(f.name)}</strong><small>${f.flag||'🌍'} ${escapeHtml(f.country||'Global')}</small></div><strong class="rich-money">${format(f.amount)}</strong></div>`).join('')}</div></div>`;
+  }
+  function openRichList(){
+    openModal(richListHtml());
+    $$('.rich-avatar img').forEach(img=>{const f=fortunes.find(x=>x.id===img.dataset.portraitId); if(f) loadPortrait(f,img);});
+  }
+  function roastSpending(){
+    if(!state.fortune) return;
+    const pctSpent=state.starting?state.spent/state.starting:0;
+    const roasts = pctSpent<=0 ? ['Bro opened a billionaire simulator and bought absolutely NOTHING.','Your fortune is untouched. Coward.'] : pctSpent<.01 ? ['That is not spending. That is window shopping.','You burned less than a rounding error.'] : pctSpent<.1 ? ['Okay, the money has officially noticed you.','You have entered the mildly irresponsible zone.'] : pctSpent<.5 ? ['Now THAT looks like a shopping problem.','Your accountant just quietly resigned.'] : pctSpent<.99 ? ['At this point the fortune is fighting back.','You are speedrunning financial destruction.'] : ['BROKE. ABSOLUTELY COOKED.','You achieved the only ending that matters.'];
+    const roast=roasts[Math.floor(Math.random()*roasts.length)];
+    openModal(`<div><span class="eyebrow">SPENDING ROAST</span><h2 class="modal-title">${escapeHtml(roast)}</h2><div class="roast-meter"><span style="width:${Math.min(100,pctSpent*100)}%"></span></div><p class="modal-subtitle">You have burned <strong>${pct(pctSpent)}</strong> of ${escapeHtml(state.fortune)}'s starting fortune.</p><button class="primary-button" id="roastAgainBtn">Roast me again</button></div>`);
+    $('#roastAgainBtn')?.addEventListener('click',roastSpending);
+  }
+  function portfolioHtml(){
+    const rows=categories.filter(c=>c[0]!=='All').map(c=>({name:c[0],spent:categorySpent(c[0])})).filter(x=>x.spent>0).sort((a,b)=>b.spent-a.spent);
+    const max=rows[0]?.spent||1;
+    return `<div><span class="eyebrow">PORTFOLIO</span><h2 class="modal-title">Where the money went.</h2><p class="modal-subtitle">${rows.length} categories have received money in this run.</p><div class="portfolio-list">${rows.length?rows.map(r=>`<div class="portfolio-row"><div><strong>${escapeHtml(r.name)}</strong><span>${format(r.spent)}</span></div><div class="portfolio-track"><i style="width:${(r.spent/max)*100}%"></i></div></div>`).join(''):'<div class="report-card"><span>Status</span><strong>No purchases yet</strong></div>'}</div></div>`;
+  }
+  function openPortfolio(){openModal(portfolioHtml());}
+  function jackpot(){
+    if(!state.fortune)return;
+    const affordable=products.filter(p=>p.price<=state.balance&&p.price>=Math.max(1,state.balance*.01));
+    if(!affordable.length)return showToast('Jackpot needs a bigger wallet or a little more spending room.');
+    const p=affordable[Math.floor(Math.random()*affordable.length)];
+    state.jackpotWins=(state.jackpotWins||0)+1; save();
+    openModal(`<div><span class="eyebrow">JACKPOT PICK</span><h2 class="modal-title">${escapeHtml(p.name)}</h2><p class="modal-subtitle">The machine found something expensive enough to hurt.</p><div class="wheel-result"><strong>${format(p.price)}</strong><span>${escapeHtml(p.category)} · ${pct(state.starting?p.price/state.starting:0)} of your starting fortune</span></div><button class="primary-button" id="jackpotBuyBtn">YOLO BUY</button><button class="ghost-button" id="jackpotSkipBtn">Skip</button></div>`);
+    $('#jackpotBuyBtn')?.addEventListener('click',()=>{buy(p,1);closeModal();renderProducts();});
+    $('#jackpotSkipBtn')?.addEventListener('click',closeModal);
+  }
+
+  function randomFortune() {
+    const choices = fortunes.filter(f => f.id !== 'custom' && f.amount);
+    const f = choices[Math.floor(Math.random()*choices.length)];
+    if (f) startFortune(f);
   }
 
   function renderAll() { renderCategories(); renderProducts(); updateStatsOnly(); renderSpotlight(); }
@@ -908,18 +1098,23 @@
     if (newly) save();
   }
 
-  function celebrate(title) {
-    showToast(`Achievement unlocked: ${title}`);
-    els.confetti.innerHTML = '';
-    for (let i=0;i<70;i++) {
-      const s = document.createElement('span');
-      s.style.left = `${Math.random()*100}%`;
-      s.style.setProperty('--x', `${(Math.random()-.5)*220}px`);
-      s.style.animationDelay = `${Math.random()*180}ms`;
-      s.style.transform = `rotate(${Math.random()*180}deg)`;
+  function burstConfetti(){
+    if(!els.confetti) return;
+    els.confetti.innerHTML='';
+    for(let i=0;i<70;i++){
+      const s=document.createElement('span');
+      s.style.left=`${Math.random()*100}%`;
+      s.style.setProperty('--x',`${(Math.random()-.5)*220}px`);
+      s.style.animationDelay=`${Math.random()*180}ms`;
+      s.style.transform=`rotate(${Math.random()*180}deg)`;
       els.confetti.appendChild(s);
     }
     setTimeout(()=>els.confetti.innerHTML='',1200);
+  }
+
+  function celebrate(title) {
+    showToast(`Achievement unlocked: ${title}`);
+    burstConfetti();
   }
 
   function showToast(message) {
@@ -943,6 +1138,7 @@
     els.modal.showModal();
     $('#shareReportBtn')?.addEventListener('click', shareReport);
     $('#closeReportBtn')?.addEventListener('click', closeModal);
+    $('#dailyCheckBtn')?.addEventListener('click', checkDaily);
   }
 
   async function shareReport() {
@@ -988,7 +1184,7 @@
   }
 
   function aboutHtml() {
-    return `<div><span class="eyebrow">HOW IT WORKS</span><h2 class="modal-title">Spend a fortune. Try not to go broke.</h2><p class="modal-subtitle">Choose a starting fortune, browse the catalog, and buy anything you can afford. Every purchase is calculated locally in your browser. USD is the internal game currency; the display can be switched to INR, EUR or GBP.</p><div class="report-grid"><div class="report-card"><span>Catalog</span><strong>${products.length}+ items</strong></div><div class="report-card"><span>Achievements</span><strong>${achievements.length}</strong></div><div class="report-card"><span>Save</span><strong>Browser only</strong></div><div class="report-card"><span>Images</span><strong>Verified real photos</strong></div></div><p class="modal-subtitle" style="margin-top:18px">Real-person fortunes are snapshots from published wealth lists, not live ownership statements. Prices are game estimates, and the experience is entertainment—not financial advice.</p></div>`;
+    return `<div><span class="eyebrow">HOW IT WORKS</span><h2 class="modal-title">Spend a fortune. Try not to go broke.</h2><p class="modal-subtitle">Choose a starting fortune, browse the catalog, and buy anything you can afford. Every purchase is calculated locally in your browser. USD is the internal game currency; the display can be switched to INR, EUR or GBP.</p><div class="report-grid"><div class="report-card"><span>Catalog</span><strong>${products.length}+ items</strong></div><div class="report-card"><span>Achievements</span><strong>${achievements.length}</strong></div><div class="report-card"><span>Save</span><strong>Browser only</strong></div><div class="report-card"><span>Images</span><strong>Realistic product imagery</strong></div></div><p class="modal-subtitle" style="margin-top:18px">Real-person fortunes are snapshots from published wealth lists, not live ownership statements. Prices are game estimates, and the experience is entertainment—not financial advice.</p></div>`;
   }
 
   function challenge() {
@@ -999,7 +1195,7 @@
     if (c.type==='compare') success = categorySpent(c.a) > categorySpent(c.b) && categorySpent(c.a) > 0;
     if (c.type==='single') success = products.some(p=>getOwned(p)>0 && p.price>=c.target);
     if (c.type==='leftPct') success = state.starting > 0 && state.balance/state.starting <= c.target;
-    openModal(`<div><span class="eyebrow">CHALLENGE ${((state.challenge%challenges.length)+1)}/${challenges.length}</span><h2 class="modal-title">${success?'Challenge cleared':'Current challenge'}</h2><p class="modal-subtitle">${escapeHtml(c.text)}</p><div class="report-card"><span>Status</span><strong>${success?'Complete':'Keep spending'}</strong></div><button class="primary-button" style="margin-top:18px" onclick="document.getElementById('modal').close()">Back to the shop</button></div>`);
+    openModal(`<div><span class="eyebrow">CHALLENGE ${((state.challenge%challenges.length)+1)}/${challenges.length}</span><h2 class="modal-title">${success?'Challenge cleared':'Current challenge'}</h2><p class="modal-subtitle">${escapeHtml(challengeDisplayText(c))}</p><div class="report-card"><span>Status</span><strong>${success?'Complete':'Keep spending'}</strong></div><button class="primary-button" style="margin-top:18px" onclick="document.getElementById('modal').close()">Back to the shop</button></div>`);
     if (success) { state.challenge++; updateChallengeCopy(); }
   }
 
@@ -1018,27 +1214,58 @@
   $('#resetBtn').addEventListener('click', resetGame);
   $('#reportBtn').addEventListener('click', () => openModal(reportHtml()));
   $('#historyBtn').addEventListener('click', () => openModal(historyHtml()));
+  $('#achievementsBtn')?.addEventListener('click', () => openModal(achievementsHtml()));
+  $('#clearFiltersBtn')?.addEventListener('click', clearFilters);
+  $('#randomFortuneBtn')?.addEventListener('click', randomFortune);
   $('#buyEverythingBtn').addEventListener('click', () => {
     const target = filteredProducts().filter(p=>p.price>0);
+    if(!target.length) return showToast('Nothing visible to buy.');
     const totalCost = target.reduce((s,p)=>s + p.price, 0);
     if (totalCost <= state.balance) {
-      target.forEach(p=>buy(p,1));
+      target.forEach(p=>{
+        state.balance-=p.price; state.spent+=p.price; state.totalItems++;
+        state.purchases[p.id]={ qty:getOwned(p)+1, firstBought:state.purchases[p.id]?.firstBought||Date.now() };
+        state.lastPurchase={id:p.id, name:p.name, qty:1, cost:p.price};
+      });
       showToast(`Bought one of all ${target.length} visible items.`);
     } else {
       const confirmMsg = `One of every visible item costs ${format(totalCost)}. You have ${format(state.balance)}. Buy as much as possible?`;
       if (!confirm(confirmMsg)) return;
       const ordered = [...target].sort((a,b)=>a.price-b.price);
+      let bought=0;
       for (const p of ordered) {
         if (state.balance < p.price) continue;
-        buy(p, 1);
+        state.balance-=p.price; state.spent+=p.price; state.totalItems++;
+        state.purchases[p.id]={ qty:getOwned(p)+1, firstBought:state.purchases[p.id]?.firstBought||Date.now() };
+        state.lastPurchase={id:p.id, name:p.name, qty:1, cost:p.price}; bought++;
       }
       const cheapest = ordered[0];
-      if (cheapest && state.balance >= cheapest.price) buy(cheapest, Math.floor(state.balance / cheapest.price));
+      if (cheapest && state.balance >= cheapest.price) {
+        const qty=Math.floor(state.balance/cheapest.price);
+        state.balance-=qty*cheapest.price; state.spent+=qty*cheapest.price; state.totalItems+=qty;
+        state.purchases[cheapest.id]={ qty:getOwned(cheapest)+qty, firstBought:state.purchases[cheapest.id]?.firstBought||Date.now() };
+        state.lastPurchase={id:cheapest.id, name:cheapest.name, qty, cost:qty*cheapest.price}; bought+=qty;
+      }
+      showToast(`Bulk spree complete: ${bought.toLocaleString()} items bought.`);
     }
-    renderProducts();
+    checkAchievements(); updateStatsOnly(); save(); renderProducts(); renderSpotlight();
   });
   $('#challengeBtn').addEventListener('click', challenge);
+  $('#dailyBtn')?.addEventListener('click', () => openModal(dailyHtml()));
+  $('#chaosBtn')?.addEventListener('click', chaosBuy);
+  $('#duelBtn')?.addEventListener('click', openDuel);
+  $('#spinBtn')?.addEventListener('click', spinWheel);
+  $('#dailyBtn')?.addEventListener('dblclick', checkDaily);
+  $('#randomItemBtn')?.addEventListener('click', randomItem);
+  $('#cheapestBtn')?.addEventListener('click', () => buyExtreme('cheap'));
+  $('#mostExpensiveBtn')?.addEventListener('click', () => buyExtreme('expensive'));
+  $('#copyStatsBtn')?.addEventListener('click', copyStats);
+
   els.luckyBtn?.addEventListener('click', luckyBuy);
+  $('#richListBtn')?.addEventListener('click', openRichList);
+  $('#roastBtn')?.addEventListener('click', roastSpending);
+  $('#portfolioBtn')?.addEventListener('click', openPortfolio);
+  $('#jackpotBtn')?.addEventListener('click', jackpot);
   els.randomizeSpotlight?.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); renderSpotlight(); });
   els.searchInput.addEventListener('input', e => { state.search = e.target.value; renderProducts(); });
   els.sortSelect.addEventListener('change', e => { state.sort=e.target.value; renderProducts(); });
@@ -1046,6 +1273,7 @@
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); els.searchInput.focus(); }
     if (e.key==='Escape' && els.modal.open) closeModal();
+    if (e.key==='Escape' && document.activeElement === els.searchInput) { els.searchInput.value=''; state.search=''; renderProducts(); }
   });
 
   load();
